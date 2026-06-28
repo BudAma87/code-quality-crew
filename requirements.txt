@@ -1,0 +1,6 @@
+# Recent anthropic SDK with beta Managed Agents support.
+# It sets the `anthropic-beta: managed-agents-2026-04-01` header for you.
+anthropic>=0.40.0
+
+# For running the sample test suite (pytest sample/test_auth.py)
+pytest>=8.0.0
