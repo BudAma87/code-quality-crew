@@ -1,0 +1,17 @@
+{
+  "name": "code-quality-crew",
+  "owner": {
+    "name": "budama87"
+  },
+  "metadata": {
+    "description": "Code Quality Crew — a Claude Managed Agents code-review plugin."
+  },
+  "plugins": [
+    {
+      "name": "code-quality-crew",
+      "source": "./plugin",
+      "description": "Review a source file with a Managed Agents crew (coordinator + reviewer + test-writer) via /crew-review, and save generated pytest tests.",
+      "version": "0.1.0"
+    }
+  ]
+}

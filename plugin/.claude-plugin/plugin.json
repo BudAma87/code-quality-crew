@@ -1,0 +1,9 @@
+{
+  "name": "code-quality-crew",
+  "version": "0.1.0",
+  "description": "Review a source file with a Claude Managed Agents crew (coordinator + reviewer + test-writer) and save generated pytest tests.",
+  "author": {
+    "name": "budama87"
+  },
+  "keywords": ["code-review", "managed-agents", "pytest", "code-quality"]
+}
