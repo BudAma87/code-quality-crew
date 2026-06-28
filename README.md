@@ -12,6 +12,25 @@ the whole picture: a *coordinator* agent that delegates a code review to two
 
 ---
 
+## TL;DR — just review my code (the plugin)
+
+If you don't want to read the tutorial and just want the crew to review files in
+**your own repo**, this project ships a ready-to-use **Claude Code plugin**.
+Install it once, then run `/crew-review <file>` on any source file — the crew
+reviews it and drops a generated `test_<name>.py` next to it.
+
+```text
+# in Claude Code, from any repo:
+/plugin marketplace add budama87/code-quality-crew
+/plugin install code-quality-crew@code-quality-crew
+/crew-review src/auth.py
+```
+
+Full walkthrough below in **[Use it in your own repo (the plugin)](#use-it-in-your-own-repo-the-plugin)**.
+The rest of this README is the learning tutorial that the plugin is built on.
+
+---
+
 ## What you'll learn
 
 | Stage | You build | New concept |
@@ -96,11 +115,22 @@ ant --version
 code-quality-crew/
 ├── README.md              # this file
 ├── .env                   # ANTHROPIC_API_KEY (never commit this)
+├── .env.example           # template to copy to .env
+├── requirements.txt       # anthropic + pytest
 ├── stage1_hello.py        # single agent
 ├── stage2_tools.py        # agent that reads/writes files in the sandbox
 ├── stage3_crew.py         # coordinator + reviewer + test-writer
-└── sample/
-    └── auth.py            # buggy code for the crew to review
+├── uploader.py            # helpers to get a local file into the sandbox
+├── sample/
+│   ├── auth.py            # buggy code for the crew to review
+│   └── test_auth.py       # example tests for it
+├── .claude-plugin/
+│   └── marketplace.json   # makes this repo an installable plugin marketplace
+└── plugin/                # the Claude Code plugin (see "Use it in your own repo")
+    ├── .claude-plugin/plugin.json
+    ├── commands/crew-review.md
+    ├── scripts/crew_review.py
+    └── README.md
 ```
 
 Create the sample file the crew will review:
@@ -372,6 +402,88 @@ with client.beta.sessions.events.stream(session.id) as stream:
 > into beta during this period. If `multiagent` isn't recognized for your org,
 > check whether it needs enabling in the Console and read the current page:
 > <https://platform.claude.com/docs/en/managed-agents/multi-agent>
+
+---
+
+## Use it in your own repo (the plugin)
+
+The tutorial creates the crew from scratch each time. Once you understand it, you
+probably just want to point the crew at real files in your project. That's what
+the bundled **Claude Code plugin** is for: it wraps the same coordinator +
+reviewer + test-writer crew behind a single `/crew-review` command.
+
+```
+code-quality-crew/
+├── .claude-plugin/marketplace.json   # makes this repo an installable marketplace
+└── plugin/
+    ├── .claude-plugin/plugin.json
+    ├── commands/crew-review.md        # the /crew-review slash command
+    ├── scripts/crew_review.py         # wrapper around the Managed Agents crew
+    └── README.md
+```
+
+### 1. Prerequisites
+
+- **Claude Code** installed.
+- **Python 3.10+** with the SDK: `pip install "anthropic>=0.40.0"`.
+- An **`ANTHROPIC_API_KEY`** — set as an environment variable, or in a `.env`
+  file in the repo you run it from. The plugin loads `.env` for you.
+
+### 2. Install the plugin
+
+From inside Claude Code (works in any repo, once installed):
+
+```
+/plugin marketplace add budama87/code-quality-crew
+/plugin install code-quality-crew@code-quality-crew
+```
+
+`marketplace add` points Claude Code at this GitHub repo; `install` pulls in the
+`code-quality-crew` plugin it advertises. You only do this once per machine.
+
+### 3. Review a file
+
+In the repo you want to review, run:
+
+```
+/crew-review src/auth.py
+```
+
+What happens:
+
+1. The crew (coordinator → reviewer + test-writer) is created **once** and its
+   IDs are cached at `~/.code-quality-crew/crew.json`, so later runs are faster.
+2. Your file is staged into a fresh sandbox and reviewed.
+3. You get a **severity-grouped review** printed back, and a generated
+   **`test_<name>.py` is written next to your source file**.
+
+Flags:
+
+| Flag | Effect |
+|------|--------|
+| `--no-tests` | Print the review only; don't write any test file. |
+| `--fresh` | Ignore the cached agents and recreate the crew. |
+
+```
+/crew-review src/auth.py --no-tests
+```
+
+### 4. Run it without Claude Code (optional)
+
+The wrapper is a normal script, so it also works straight from a terminal — handy
+for quick checks or wiring into your own tooling:
+
+```bash
+python plugin/scripts/crew_review.py src/auth.py
+python plugin/scripts/crew_review.py src/auth.py --no-tests
+```
+
+> **Heads-up.** Each `/crew-review` opens a Managed Agents session (3 agents) and
+> uses tokens; the session is deleted automatically when the run finishes. See
+> **[Cost](#cost-so-you-dont-get-surprised)** below. The first run is slower
+> because it creates the agents; subsequent runs reuse the cached crew.
+
+See `plugin/README.md` for the plugin-only quickstart.
 
 ---
 
